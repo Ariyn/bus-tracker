@@ -17,7 +17,7 @@ print a + b;
 	parser := lox.NewParser(tokens)
 	statements, _ := parser.Parse()
 
-	interpreter := lox.NewInterpreter()
+	interpreter := lox.NewInterpreter(nil)
 
 	resolver := lox.NewResolver(interpreter)
 	resolver.Resolve(statements...)
