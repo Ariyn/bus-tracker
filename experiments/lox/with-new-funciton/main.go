@@ -1,7 +1,7 @@
 package main
 
 import (
-	bus_tracker "github.com/ariyn/bus-tracker"
+	"github.com/ariyn/bus-tracker/functions"
 	lox "github.com/ariyn/lox_interpreter"
 	"log"
 )
@@ -25,7 +25,7 @@ return {
 	statements, _ := parser.Parse()
 
 	env := lox.NewEnvironment(nil)
-	env.Define("get", &bus_tracker.GetFunction{})
+	env.Define("get", &functions.GetFunction{})
 	interpreter := lox.NewInterpreter(env)
 
 	resolver := lox.NewResolver(interpreter)
