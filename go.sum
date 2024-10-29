@@ -12,6 +12,10 @@ github.com/ariyn/lox_interpreter v0.0.0-20241028122113-501e21909807 h1:vNGE/5e8h
 github.com/ariyn/lox_interpreter v0.0.0-20241028122113-501e21909807/go.mod h1:5csySWGxFmA6smKC9ovELJkV1QW8EjIDIYulo3lJ6SQ=
 github.com/ariyn/lox_interpreter v0.0.0-20241028122832-daf244965a70 h1:n7VqgDfxoKRb8c3OiRaeDD2wUKVu0Us7y/GZPCsxPGw=
 github.com/ariyn/lox_interpreter v0.0.0-20241028122832-daf244965a70/go.mod h1:5csySWGxFmA6smKC9ovELJkV1QW8EjIDIYulo3lJ6SQ=
+github.com/ariyn/lox_interpreter v0.0.0-20241029104930-e1c95cd28129 h1:7aYV2boOYll9oU9k89Me87wAG3XBulE3x+fcOvIYHH8=
+github.com/ariyn/lox_interpreter v0.0.0-20241029104930-e1c95cd28129/go.mod h1:5csySWGxFmA6smKC9ovELJkV1QW8EjIDIYulo3lJ6SQ=
+github.com/ariyn/lox_interpreter v0.0.0-20241029105406-2f49df49c836 h1:MwFOedYzPTbPoM9lG8BNsU3aQhfAL8yt5BkOO8u5Xx4=
+github.com/ariyn/lox_interpreter v0.0.0-20241029105406-2f49df49c836/go.mod h1:5csySWGxFmA6smKC9ovELJkV1QW8EjIDIYulo3lJ6SQ=
 github.com/boltdb/bolt v1.3.1 h1:JQmyP4ZBrce+ZQu0dY660FMfatumYDLun9hBCUVIkF4=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
 github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=

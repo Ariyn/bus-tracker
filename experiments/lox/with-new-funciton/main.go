@@ -3,12 +3,21 @@ package main
 import (
 	bus_tracker "github.com/ariyn/bus-tracker"
 	lox "github.com/ariyn/lox_interpreter"
+	"log"
 )
+
+func init() {
+	lox.NO_RETURN_AT_ROOT = false
+}
 
 func main() {
 	script := `var x = get("https://example.org", "/html/body/div/h1");
-print "RESULT " + x;
+print "crawled " + x;
+return {
+	title: x
+};
 `
+
 	scanner := lox.NewScanner(script)
 	tokens, _ := scanner.ScanTokens()
 
@@ -25,8 +34,10 @@ print "RESULT " + x;
 		panic(err)
 	}
 
-	_, err = interpreter.Interpret(statements)
+	v, err := interpreter.Interpret(statements)
 	if err != nil {
 		panic(err)
 	}
+
+	log.Println("RESULT", v)
 }
