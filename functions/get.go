@@ -3,7 +3,6 @@ package functions
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/PuerkitoBio/goquery"
 	lox "github.com/ariyn/lox_interpreter"
 	"io"
 	"log"
@@ -24,10 +23,6 @@ func (g GetFunction) Call(_ *lox.Interpreter, arguments []interface{}) (v interf
 		err = fmt.Errorf("get() 1st argument need string, but got %v", arguments[0])
 		return
 	}
-	if _, ok := arguments[1].(string); !ok {
-		err = fmt.Errorf("get() 2nd argument need string, but got %v", arguments[1])
-		return
-	}
 
 	resp, err := http.Get(arguments[0].(string))
 	if err != nil {
@@ -45,21 +40,34 @@ func (g GetFunction) Call(_ *lox.Interpreter, arguments []interface{}) (v interf
 		defer resp.Body.Close()
 	}
 
-	doc, err := goquery.NewDocumentFromReader(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	instance, err := NewCrawlDataInstance(string(body))
 	if err != nil {
 		return nil, err
 	}
 
-	var selector = arguments[1].(string)
-	if strings.HasPrefix(selector, "/") {
-		selector, err = XpathConverter(selector)
+	return instance, nil
+}
 
-		if err != nil {
-			return nil, err
-		}
-	}
+func (g GetFunction) Arity() int {
+	return 1
+}
 
-	return doc.Find(selector).Text(), nil
+func (g GetFunction) ToString() string {
+	return "<native fn Get>"
+}
+
+func (g GetFunction) Bind(instance *lox.LoxInstance) lox.Callable {
+	return g
+}
+
+type xmlOption struct {
+	key   string
+	value interface{}
 }
 
 func convertJsonToXmlReader(reader io.Reader) (xmlReader io.ReadCloser, err error) {
@@ -77,11 +85,6 @@ func convertJsonToXmlReader(reader io.Reader) (xmlReader io.ReadCloser, err erro
 	xml := convertJsonToXml(&xmlOption{value: v})
 	log.Println(xml)
 	return io.NopCloser(strings.NewReader(xml)), nil
-}
-
-type xmlOption struct {
-	key   string
-	value interface{}
 }
 
 func convertJsonToXml(option *xmlOption) string {
@@ -126,12 +129,4 @@ func convertArrayToXml(option *xmlOption) string {
 		xml = append(xml, convertJsonToXml(&xmlOption{value: v}))
 	}
 	return strings.Join(xml, fmt.Sprintf("</%s><%s>", k, k))
-}
-
-func (g GetFunction) Arity() int {
-	return 2
-}
-
-func (g GetFunction) ToString() string {
-	return "<native fn Get>"
 }

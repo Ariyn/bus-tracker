@@ -5,7 +5,7 @@ go 1.23
 require (
 	github.com/PuerkitoBio/goquery v1.10.0 // indirect
 	github.com/andybalholm/cascadia v1.3.2 // indirect
-	github.com/ariyn/lox_interpreter v0.0.0-20241029105406-2f49df49c836 // indirect
+	github.com/ariyn/lox_interpreter v0.0.0-20241030014307-535e71c2d380 // indirect
 	github.com/boltdb/bolt v1.3.1 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.2 // indirect
