@@ -8,7 +8,7 @@ import (
 
 type BasicFunctionCall func(doc *goquery.Selection, arguments []any) (v interface{}, err error)
 
-var _ (lox.Callable) = (*BasicFunction)(nil)
+var _ lox.Callable = (*BasicFunction)(nil)
 
 type BasicFunction struct {
 	instance *lox.LoxInstance

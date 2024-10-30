@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	bus_tracker "github.com/ariyn/bus-tracker"
 	"github.com/boltdb/bolt"
 	"github.com/google/uuid"
@@ -185,29 +186,29 @@ func functionInvoke(c echo.Context) (err error) {
 
 	bucket := tx.Bucket([]byte("functions"))
 	if bucket == nil {
-		return c.JSON(http.StatusInternalServerError, "functions bucket is not found")
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("functions bucket is not found: %s", err))
 	}
 
 	b := bucket.Get([]byte(name + key))
 	if b == nil {
-		return c.JSON(http.StatusNotFound, "function not found")
+		return c.String(http.StatusNotFound, fmt.Sprintf("function not found: %s", err))
 	}
 
 	var f Function
 
 	err = json.Unmarshal(b, &f)
 	if err != nil {
-		return
+		return c.String(http.StatusBadRequest, fmt.Sprintf("failed to unmarshal function: %s", err))
 	}
 
 	bts, err := bus_tracker.NewBusTrackerScript(string(f.Code))
 	if err != nil {
-		return
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed to instantiate scripting environment: %s", err))
 	}
 
 	v, err := bts.Run()
 	if err != nil {
-		return
+		return c.String(http.StatusInternalServerError, fmt.Sprintf("failed: %s", err))
 	}
 
 	return c.JSON(http.StatusOK, v)

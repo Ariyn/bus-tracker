@@ -7,14 +7,17 @@ import (
 	"strings"
 )
 
+var cls = lox.NewLoxClass("CrawlData", nil, map[string]lox.Callable{
+	"find":   NewBasicFunction("find", 1, find),
+	"text":   NewBasicFunction("text", 0, text),
+	"attr":   NewBasicFunction("attr", 1, attribute),
+	"length": NewBasicFunction("length", 0, length),
+	"next":   NewBasicFunction("next", 0, next),
+	"parent": NewBasicFunction("parent", 0, parent),
+	"html":   NewBasicFunction("html", 0, html),
+})
+
 func NewCrawlDataInstance(current string) (*lox.LoxInstance, error) {
-	cls := lox.NewLoxClass("CrawlData", nil, map[string]lox.Callable{
-		"filter": NewBasicFunction("filter", 1, filter),
-		"text":   NewBasicFunction("text", 0, text),
-		"attr":   NewBasicFunction("attr", 1, attribute),
-		"length": NewBasicFunction("length", 0, length),
-		"next":   NewBasicFunction("next", 0, next),
-	})
 	instance := lox.NewLoxInstance(cls)
 
 	doc, err := goquery.NewDocumentFromReader(strings.NewReader(current))
@@ -28,15 +31,6 @@ func NewCrawlDataInstance(current string) (*lox.LoxInstance, error) {
 }
 
 func NewCrawlDataInstanceWithSelection(doc *goquery.Selection) (*lox.LoxInstance, error) {
-	cls := lox.NewLoxClass("CrawlData", nil, map[string]lox.Callable{
-		"filter": NewBasicFunction("filter", 1, filter),
-		"text":   NewBasicFunction("text", 0, text),
-		"attr":   NewBasicFunction("attr", 1, attribute),
-		"length": NewBasicFunction("length", 0, length),
-		"next":   NewBasicFunction("next", 0, next),
-		"parent": NewBasicFunction("parent", 0, parent),
-		"html":   NewBasicFunction("html", 0, html),
-	})
 	instance := lox.NewLoxInstance(cls)
 
 	_ = instance.Set(lox.Token{Lexeme: "doc"}, lox.NewLiteralExpr(doc))
@@ -44,7 +38,7 @@ func NewCrawlDataInstanceWithSelection(doc *goquery.Selection) (*lox.LoxInstance
 	return instance, nil
 }
 
-func filter(doc *goquery.Selection, arguments []any) (v interface{}, err error) {
+func find(doc *goquery.Selection, arguments []any) (v interface{}, err error) {
 	if _, ok := arguments[0].(string); !ok {
 		err = fmt.Errorf("get() 1st argument need string, but got %v", arguments[0])
 		return

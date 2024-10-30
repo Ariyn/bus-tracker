@@ -51,7 +51,7 @@ func (bt *BusTrackerScript) Run() (v interface{}, err error) {
 	return bt.interpreter.Interpret(bt.statements)
 }
 
-var _ (lox.Callable) = (*NumberFunction)(nil)
+var _ lox.Callable = (*NumberFunction)(nil)
 
 type NumberFunction struct {
 }

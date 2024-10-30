@@ -5,7 +5,6 @@ import (
 	"fmt"
 	lox "github.com/ariyn/lox_interpreter"
 	"io"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -13,7 +12,7 @@ import (
 
 var indexRegexp = regexp.MustCompile(`\[(\d+)\]`)
 
-var _ (lox.Callable) = (*GetFunction)(nil)
+var _ lox.Callable = (*GetFunction)(nil)
 
 type GetFunction struct {
 }
@@ -32,25 +31,36 @@ func (g GetFunction) Call(_ *lox.Interpreter, arguments []interface{}) (v interf
 
 	contentType := resp.Header.Get("Content-Type")
 	if strings.HasPrefix(contentType, "application/json") {
-		resp.Body, err = convertJsonToXmlReader(resp.Body)
+		body, err := convertJsonToXmlString(resp.Body)
 		if err != nil {
 			return nil, err
 		}
 
-		defer resp.Body.Close()
+		instance, err := NewCrawlDataInstance(body)
+		if err != nil {
+			return nil, err
+		}
+		return instance, nil
 	}
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return
+	if strings.HasPrefix(contentType, "text/html") {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		instance, err := NewCrawlDataInstance(string(body))
+		if err != nil {
+			return nil, err
+		}
+		return instance, nil
 	}
 
-	instance, err := NewCrawlDataInstance(string(body))
-	if err != nil {
-		return nil, err
+	if strings.HasPrefix(contentType, "image/") {
+		return nil, fmt.Errorf("image type not supported yet")
 	}
 
-	return instance, nil
+	return nil, fmt.Errorf("Content-Type %s is not supported", contentType)
 }
 
 func (g GetFunction) Arity() int {
@@ -83,8 +93,23 @@ func convertJsonToXmlReader(reader io.Reader) (xmlReader io.ReadCloser, err erro
 	}
 
 	xml := convertJsonToXml(&xmlOption{value: v})
-	log.Println(xml)
 	return io.NopCloser(strings.NewReader(xml)), nil
+}
+
+func convertJsonToXmlString(reader io.Reader) (xml string, err error) {
+	body, err := io.ReadAll(reader)
+	if err != nil {
+		return
+	}
+
+	var v interface{}
+	err = json.Unmarshal(body, &v)
+	if err != nil {
+		return
+	}
+
+	xml = convertJsonToXml(&xmlOption{value: v})
+	return xml, nil
 }
 
 func convertJsonToXml(option *xmlOption) string {
@@ -114,8 +139,6 @@ func convertMapToXml(option *xmlOption) string {
 	var xml string
 	for k, v := range m {
 		xml += fmt.Sprintf("<%s>%s</%s>", k, convertJsonToXml(&xmlOption{value: v, key: k}), k)
-		log.Println(k, xml)
-		//xml += convertJsonToXml(&xmlOption{value: v, key: k})
 	}
 
 	return xml
