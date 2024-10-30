@@ -35,6 +35,7 @@ func NewCrawlDataInstanceWithSelection(doc *goquery.Selection) (*lox.LoxInstance
 		"length": NewBasicFunction("length", 0, length),
 		"next":   NewBasicFunction("next", 0, next),
 		"parent": NewBasicFunction("parent", 0, parent),
+		"html":   NewBasicFunction("html", 0, html),
 	})
 	instance := lox.NewLoxInstance(cls)
 
@@ -85,4 +86,8 @@ func next(doc *goquery.Selection, _ []interface{}) (v interface{}, err error) {
 
 func parent(doc *goquery.Selection, _ []interface{}) (v interface{}, err error) {
 	return doc.Parent(), nil
+}
+
+func html(doc *goquery.Selection, _ []interface{}) (v interface{}, err error) {
+	return doc.Html()
 }
