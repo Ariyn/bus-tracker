@@ -1,8 +1,10 @@
 package bus_tracker
 
 import (
+	"fmt"
 	"github.com/ariyn/bus-tracker/functions"
 	lox "github.com/ariyn/lox_interpreter"
+	"strconv"
 )
 
 func init() {
@@ -29,6 +31,7 @@ func NewBusTrackerScript(script string) (bt *BusTrackerScript, err error) {
 
 	env := lox.NewEnvironment(nil)
 	env.Define("get", &functions.GetFunction{})
+	env.Define("number", &NumberFunction{})
 
 	interpreter := lox.NewInterpreter(env)
 
@@ -46,4 +49,34 @@ func NewBusTrackerScript(script string) (bt *BusTrackerScript, err error) {
 
 func (bt *BusTrackerScript) Run() (v interface{}, err error) {
 	return bt.interpreter.Interpret(bt.statements)
+}
+
+var _ (lox.Callable) = (*NumberFunction)(nil)
+
+type NumberFunction struct {
+}
+
+func (n NumberFunction) Call(interpreter *lox.Interpreter, arguments []interface{}) (interface{}, error) {
+	arg, ok := arguments[0].(string)
+	if !ok {
+		if _, ok := arguments[0].(float64); !ok {
+			return nil, fmt.Errorf("number() argument must be string or number")
+		}
+
+		return arguments[0], nil
+	}
+
+	return strconv.ParseFloat(arg, 64)
+}
+
+func (n NumberFunction) Arity() int {
+	return 1
+}
+
+func (n NumberFunction) ToString() string {
+	return "<native fn>"
+}
+
+func (n NumberFunction) Bind(instance *lox.LoxInstance) lox.Callable {
+	return n
 }
