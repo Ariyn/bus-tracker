@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	// Echo instance
+	// Echo page
 	e := echo.New()
 
 	// Middleware

@@ -32,8 +32,9 @@ func getCode(functionId string) (code string, err error) {
 }
 
 type function struct {
-	id   string
-	code string
+	functionID string
+	taskID     string
+	code       string
 }
 
 func main() {
@@ -47,21 +48,21 @@ func main() {
 		wg.Add(1)
 		defer wg.Done()
 		for {
-			rows, err := db.Query("SELECT function_id from tasks WHERE done_at IS NULL AND status = 'pending' LIMIT 1")
+			rows, err := db.Query("SELECT id, function_id from tasks WHERE done_at IS NULL AND status = 'pending' LIMIT 1")
 			if err != nil {
 				log.Println(err)
 				continue
 			}
 
 			for rows.Next() {
-				var functionID string
-				err = rows.Scan(&functionID)
+				var functionID, taskID string
+				err = rows.Scan(&taskID, &functionID)
 				if err != nil {
 					log.Println(err)
 					continue
 				}
 
-				_, err = db.Exec("UPDATE tasks SET status = 'running' WHERE function_id = $1", functionID)
+				_, err = db.Exec("UPDATE tasks SET status = 'running', started_at = NOW() WHERE id = $1", taskID)
 				if err != nil {
 					log.Println(err)
 					continue
@@ -73,39 +74,58 @@ func main() {
 					continue
 				}
 				queue <- function{
-					id:   functionID,
-					code: code,
+					functionID: functionID,
+					taskID:     taskID,
+					code:       code,
 				}
 			}
 		}
 	}(queue)
 
 	for f := range queue {
-		id, code := f.id, f.code
-		bts, err := bus_tracker.NewBusTrackerScript(code)
+		runScript(f.taskID, f.code)
+	}
+}
+
+func runScript(id string, code string) {
+	defer func() {
+		_, err := db.Exec("UPDATE tasks SET done_at = NOW(), status='done' WHERE id = $1", id)
+
 		if err != nil {
 			log.Println(err)
-			continue
 		}
+	}()
 
-		v, err := bts.Run()
-		if err != nil {
-			log.Println(err)
-			continue
-		}
+	bts, err := bus_tracker.NewBusTrackerScript(code)
+	if err != nil {
+		writeResult(id, "", err)
+		return
+	}
 
-		log.Println(v)
+	v, err := bts.Run()
+	if err != nil {
+		writeResult(id, "", err)
+		return
+	}
 
-		result, err := json.Marshal(v)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
+	b, err := json.Marshal(v)
+	if err != nil {
+		writeResult(id, "", err)
+		return
+	}
 
-		_, err = db.Exec("UPDATE tasks SET done_at = NOW(), result=$2, status='done' WHERE function_id = $1", id, string(result))
-		if err != nil {
-			log.Println(err)
-			continue
-		}
+	writeResult(id, string(b), nil)
+	return
+}
+func writeResult(id string, result string, err error) {
+	log.Println(id, result, err)
+	errorString := ""
+	if err != nil {
+		errorString = err.Error()
+	}
+
+	_, insertErr := db.Exec("UPDATE tasks SET result = $1, error = $2 WHERE id = $3", result, errorString, id)
+	if insertErr != nil {
+		log.Println(insertErr)
 	}
 }
