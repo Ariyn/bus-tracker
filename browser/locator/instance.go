@@ -22,6 +22,22 @@ func init() {
 		"last": newLocatorFunction("last", 0, func(page playwright.Locator, _ []interface{}) (v interface{}, err error) {
 			return NewLocatorInstance(page.Last())
 		}),
+		"all": newLocatorFunction("all", 0, func(page playwright.Locator, _ []interface{}) (v interface{}, err error) {
+			all, err := page.All()
+			if err != nil {
+				return nil, err
+			}
+
+			instances := make([]*lox.LoxInstance, len(all))
+			for i, locator := range all {
+				instances[i], err = NewLocatorInstance(locator)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			return lox.ListType{instances}, nil
+		}),
 	}
 }
 

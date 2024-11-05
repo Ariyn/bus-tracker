@@ -73,6 +73,8 @@ func main() {
 					log.Println(err)
 					continue
 				}
+
+				log.Printf("RUN %s for %s", taskID, functionID)
 				queue <- function{
 					functionID: functionID,
 					taskID:     taskID,

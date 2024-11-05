@@ -20,6 +20,16 @@ github.com/ariyn/lox_interpreter v0.0.0-20241030013420-161dc93355a1 h1:UcnnzWSa6
 github.com/ariyn/lox_interpreter v0.0.0-20241030013420-161dc93355a1/go.mod h1:5csySWGxFmA6smKC9ovELJkV1QW8EjIDIYulo3lJ6SQ=
 github.com/ariyn/lox_interpreter v0.0.0-20241030014307-535e71c2d380 h1:rOq2G+cs/WZPS85pNe2/57hkUfE9C2rMu2YlxkhJDHY=
 github.com/ariyn/lox_interpreter v0.0.0-20241030014307-535e71c2d380/go.mod h1:5csySWGxFmA6smKC9ovELJkV1QW8EjIDIYulo3lJ6SQ=
+github.com/ariyn/lox_interpreter v0.0.0-20241104124022-b73a4f42ebcd h1:nxBhI76AeEBpX4RYDiDZIlolIX4CnUXovF/Kuuluu44=
+github.com/ariyn/lox_interpreter v0.0.0-20241104124022-b73a4f42ebcd/go.mod h1:5csySWGxFmA6smKC9ovELJkV1QW8EjIDIYulo3lJ6SQ=
+github.com/ariyn/lox_interpreter v0.0.0-20241104124410-5a758509e393 h1:upo2+9YCvnVFTidWku6GgkSI+ZJ99a/CmtWuFIOUTDU=
+github.com/ariyn/lox_interpreter v0.0.0-20241104124410-5a758509e393/go.mod h1:5csySWGxFmA6smKC9ovELJkV1QW8EjIDIYulo3lJ6SQ=
+github.com/ariyn/lox_interpreter v0.0.0-20241104130431-f3039df13b90 h1:sdKArWOoQhfZ3BjwS0tLuMVn7hRu72JB5K6/5U6C6t0=
+github.com/ariyn/lox_interpreter v0.0.0-20241104130431-f3039df13b90/go.mod h1:5csySWGxFmA6smKC9ovELJkV1QW8EjIDIYulo3lJ6SQ=
+github.com/ariyn/lox_interpreter v0.0.0-20241104131354-ed5f802c77f9 h1:VWSgD14QZF9Z4bipdS+b4CYHv5lr6/TcYEYih12U+28=
+github.com/ariyn/lox_interpreter v0.0.0-20241104131354-ed5f802c77f9/go.mod h1:5csySWGxFmA6smKC9ovELJkV1QW8EjIDIYulo3lJ6SQ=
+github.com/ariyn/lox_interpreter v0.0.0-20241105122839-7f3a8a83da86 h1:A8b90L98DscpJwuAzKUtfR8iTop9h4VvM9mQzbLbXXU=
+github.com/ariyn/lox_interpreter v0.0.0-20241105122839-7f3a8a83da86/go.mod h1:5csySWGxFmA6smKC9ovELJkV1QW8EjIDIYulo3lJ6SQ=
 github.com/boltdb/bolt v1.3.1 h1:JQmyP4ZBrce+ZQu0dY660FMfatumYDLun9hBCUVIkF4=
 github.com/boltdb/bolt v1.3.1/go.mod h1:clJnj/oiGkjum5o1McbSZDSLxVThjynRyGBgiAx27Ps=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
