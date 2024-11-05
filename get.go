@@ -1,8 +1,9 @@
-package functions
+package bus_tracker
 
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/ariyn/bus-tracker/functions"
 	lox "github.com/ariyn/lox_interpreter"
 	"io"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 )
 
 var indexRegexp = regexp.MustCompile(`\[(\d+)\]`)
+var contentDispositionRegexp = regexp.MustCompile(`filename(?:\*=UTF-8''|=)(.+)(?:;|$)`)
 
 var _ lox.Callable = (*GetFunction)(nil)
 
@@ -18,12 +20,13 @@ type GetFunction struct {
 }
 
 func (g GetFunction) Call(_ *lox.Interpreter, arguments []interface{}) (v interface{}, err error) {
-	if _, ok := arguments[0].(string); !ok {
+	url, ok := arguments[0].(string)
+	if !ok {
 		err = fmt.Errorf("get() 1st argument need string, but got %v", arguments[0])
 		return
 	}
 
-	resp, err := http.Get(arguments[0].(string))
+	resp, err := http.Get(url)
 	if err != nil {
 		return
 	}
@@ -36,7 +39,7 @@ func (g GetFunction) Call(_ *lox.Interpreter, arguments []interface{}) (v interf
 			return nil, err
 		}
 
-		instance, err := NewCrawlDataInstance(body)
+		instance, err := functions.NewCrawlDataInstance(body)
 		if err != nil {
 			return nil, err
 		}
@@ -49,7 +52,7 @@ func (g GetFunction) Call(_ *lox.Interpreter, arguments []interface{}) (v interf
 			return nil, err
 		}
 
-		instance, err := NewCrawlDataInstance(string(body))
+		instance, err := functions.NewCrawlDataInstance(string(body))
 		if err != nil {
 			return nil, err
 		}
@@ -57,7 +60,23 @@ func (g GetFunction) Call(_ *lox.Interpreter, arguments []interface{}) (v interf
 	}
 
 	if strings.HasPrefix(contentType, "image/") {
-		return nil, fmt.Errorf("image type not supported yet")
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		name := resp.Header.Get("Content-Disposition")
+		if name == "" {
+			tokens := strings.Split(url, "/")
+			name = tokens[len(tokens)-1]
+		} else {
+			matches := contentDispositionRegexp.FindStringSubmatch(name)
+			if len(matches) > 1 {
+				name = matches[1]
+			}
+		}
+
+		return NewImageInstance(&Image{Body: body, Url: url, ContentType: resp.Header.Get("Content-Type"), Name: name}), nil
 	}
 
 	return nil, fmt.Errorf("Content-Type %s is not supported", contentType)

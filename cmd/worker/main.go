@@ -1,14 +1,18 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
-	bus_tracker "github.com/ariyn/bus-tracker"
-	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
+	"fmt"
+	storage_go "github.com/supabase-community/storage-go"
 	"log"
 	"os"
 	"sync"
+
+	bus_tracker "github.com/ariyn/bus-tracker"
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 var db *sql.DB
@@ -23,6 +27,9 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	log.Println(os.Getenv("SUPABASE_SERVICE_KEY"))
+	bus_tracker.StorageClient = storage_go.NewClient(os.Getenv("SUPABASE_STORAGE_BASE_URL"), os.Getenv("SUPABASE_SERVICE_KEY"), nil)
 }
 
 func getCode(functionId string) (code string, err error) {
@@ -110,6 +117,22 @@ func runScript(id string, code string) {
 		return
 	}
 
+	if image, ok := v.(*bus_tracker.Image); ok {
+		path := fmt.Sprintf("%s", image.Name)
+
+		_, err = bus_tracker.StorageClient.UploadFile("images", path, bytes.NewReader(image.Body), storage_go.FileOptions{
+			ContentType: &image.ContentType,
+		})
+		if err != nil {
+			writeResult(id, "", err)
+		}
+
+		publicUrl := bus_tracker.StorageClient.GetPublicUrl("images", path)
+
+		writeResult(id, publicUrl.SignedURL, nil)
+		return
+	}
+
 	b, err := json.Marshal(v)
 	if err != nil {
 		writeResult(id, "", err)
@@ -119,6 +142,7 @@ func runScript(id string, code string) {
 	writeResult(id, string(b), nil)
 	return
 }
+
 func writeResult(id string, result string, err error) {
 	log.Println(id, result, err)
 	errorString := ""
