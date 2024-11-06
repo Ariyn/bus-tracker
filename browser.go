@@ -1,22 +1,31 @@
-package browser
+package bus_tracker
 
 import (
 	"fmt"
-	"github.com/ariyn/bus-tracker/browser/page"
 	lox "github.com/ariyn/lox_interpreter"
 	"github.com/playwright-community/playwright-go"
+	"strings"
 )
 
-var _ lox.Callable = (*GetFunction)(nil)
+var _ lox.Callable = (*BrowserGetFunction)(nil)
 
-type GetFunction struct {
+type BrowserGetFunction struct {
 }
 
-func (f GetFunction) Bind(instance *lox.LoxInstance) lox.Callable {
+func (f BrowserGetFunction) Bind(instance *lox.LoxInstance) lox.Callable {
 	return f
 }
 
-func (f GetFunction) Call(_ *lox.Interpreter, arguments []interface{}) (v interface{}, err error) {
+func (f BrowserGetFunction) Call(i *lox.Interpreter, arguments []interface{}) (v interface{}, err error) {
+	userAgent, err := i.Globals.Get(lox.Token{Lexeme: "$user-agent"})
+	if err != nil {
+		if strings.Index(err.Error(), "Undefined variable") != -1 {
+			userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3"
+		} else {
+			return nil, err
+		}
+	}
+
 	url, ok := arguments[0].(string)
 	if !ok {
 		return nil, fmt.Errorf("playwright() 1st argument need string, but got %v", arguments[0])
@@ -37,7 +46,9 @@ func (f GetFunction) Call(_ *lox.Interpreter, arguments []interface{}) (v interf
 		return nil, fmt.Errorf("could not launch browser: %v", err)
 	}
 
-	_page, err := _browser.NewPage()
+	_page, err := _browser.NewPage(playwright.BrowserNewPageOptions{
+		UserAgent: playwright.String(userAgent.(string)),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("could not create page: %v", err)
 	}
@@ -51,13 +62,13 @@ func (f GetFunction) Call(_ *lox.Interpreter, arguments []interface{}) (v interf
 		return nil, fmt.Errorf("could not wait for load state: %v", err)
 	}
 
-	return page.NewInstance(_page)
+	return NewPageInstance(_page)
 }
 
-func (f GetFunction) Arity() int {
+func (f BrowserGetFunction) Arity() int {
 	return 1
 }
 
-func (f GetFunction) ToString() string {
+func (f BrowserGetFunction) ToString() string {
 	return "<native fn Browser>"
 }

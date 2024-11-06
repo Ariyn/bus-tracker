@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/PuerkitoBio/goquery v1.10.0
-	github.com/ariyn/lox_interpreter v0.0.0-20241105122839-7f3a8a83da86
+	github.com/ariyn/lox_interpreter v0.0.0-20241106123216-fb40730085a5
 	github.com/boltdb/bolt v1.3.1
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1

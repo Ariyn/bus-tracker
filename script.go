@@ -2,7 +2,6 @@ package bus_tracker
 
 import (
 	"fmt"
-	"github.com/ariyn/bus-tracker/browser"
 	lox "github.com/ariyn/lox_interpreter"
 	"strconv"
 )
@@ -16,7 +15,7 @@ type BusTrackerScript struct {
 	interpreter *lox.Interpreter
 }
 
-func NewBusTrackerScript(script string) (bt *BusTrackerScript, err error) {
+func NewBusTrackerScript(script string, envVar map[string]string) (bt *BusTrackerScript, err error) {
 	scanner := lox.NewScanner(script)
 	tokens, err := scanner.ScanTokens()
 	if err != nil {
@@ -31,7 +30,7 @@ func NewBusTrackerScript(script string) (bt *BusTrackerScript, err error) {
 
 	env := lox.NewEnvironment(nil)
 	env.Define("get", &GetFunction{})
-	env.Define("browser", &browser.GetFunction{})
+	env.Define("browser", &BrowserGetFunction{})
 	env.Define("number", &NumberFunction{})
 
 	interpreter := lox.NewInterpreter(env)
