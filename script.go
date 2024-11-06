@@ -33,6 +33,10 @@ func NewBusTrackerScript(script string, envVar map[string]string) (bt *BusTracke
 	env.Define("browser", &BrowserGetFunction{})
 	env.Define("number", &NumberFunction{})
 
+	for k, v := range envVar {
+		env.Define(k, v)
+	}
+
 	interpreter := lox.NewInterpreter(env)
 
 	resolver := lox.NewResolver(interpreter)
@@ -48,7 +52,18 @@ func NewBusTrackerScript(script string, envVar map[string]string) (bt *BusTracke
 }
 
 func (bt *BusTrackerScript) Run() (v interface{}, err error) {
-	return bt.interpreter.Interpret(bt.statements)
+	v, err = bt.interpreter.Interpret(bt.statements)
+	if err != nil {
+		return
+	}
+
+	if instance, ok := v.(*lox.LoxInstance); ok {
+		if instance.ToString() == "<inst Image>" {
+			return instance.Get(lox.Token{Lexeme: "_image"})
+		}
+	}
+
+	return v, nil
 }
 
 var _ lox.Callable = (*NumberFunction)(nil)
