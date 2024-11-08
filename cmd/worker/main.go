@@ -163,7 +163,12 @@ func runScript(id string, code string, envVar map[string]string) {
 		return
 	}
 
-	log.Printf("returned %#v, %s", v, err)
+	if err != nil {
+		log.Println("error returned", err)
+	} else {
+		log.Printf("returned %#v", v)
+	}
+
 	if image, ok := v.(*bus_tracker.Image); ok {
 		path := fmt.Sprintf("%s", image.Name)
 

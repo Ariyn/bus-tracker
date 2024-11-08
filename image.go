@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	lox "github.com/ariyn/lox_interpreter"
+	"github.com/google/uuid"
 	storage_go "github.com/supabase-community/storage-go"
 )
 
@@ -19,31 +20,12 @@ type Image struct {
 func NewImageInstance(image *Image) *lox.LoxInstance {
 	instance := lox.NewLoxInstance(
 		lox.NewLoxClass("Image", nil, map[string]lox.Callable{
-			"save": newImageFunction("save", 1, save),
+			"save": newImageFunction("save", 0, save),
 		}))
 
 	_ = instance.Set(lox.Token{Lexeme: "_image"}, lox.NewLiteralExpr(image))
 
 	return instance
-}
-
-func save(image *Image, arguments []interface{}) (v interface{}, err error) {
-	path, ok := arguments[0].(string)
-	if !ok {
-		err = fmt.Errorf("save() 1st argument need string, but got %v", arguments[0])
-		return
-	}
-
-	_, err = StorageClient.UploadFile("images", path, bytes.NewReader(image.Body), storage_go.FileOptions{
-		ContentType: &image.ContentType,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	publicUrl := StorageClient.GetPublicUrl("images", path)
-
-	return publicUrl, nil
 }
 
 type imageFunctionCall func(image *Image, arguments []any) (v interface{}, err error)
@@ -94,4 +76,18 @@ func (f ImageFunction) ToString() string {
 func (f ImageFunction) Bind(instance *lox.LoxInstance) lox.Callable {
 	f.instance = instance
 	return f
+}
+
+func save(image *Image, arguments []interface{}) (v interface{}, err error) {
+	path := uuid.New().String()
+	_, err = StorageClient.UploadFile("images", path, bytes.NewReader(image.Body), storage_go.FileOptions{
+		ContentType: &image.ContentType,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	publicUrl := StorageClient.GetPublicUrl("images", path)
+
+	return publicUrl, nil
 }

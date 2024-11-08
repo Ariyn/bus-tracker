@@ -8,7 +8,7 @@ import (
 
 const locatorKey = "_Locator"
 
-type locatorFunctionCall func(locator playwright.Locator, arguments []any) (v interface{}, err error)
+type locatorFunctionCall func(locator playwright.Locator, page playwright.Page, arguments []any) (v interface{}, err error)
 
 var _ lox.Callable = (*LocatorFunction)(nil)
 
@@ -28,17 +28,27 @@ func newLocatorFunction(name string, arity int, call locatorFunctionCall) *Locat
 }
 
 func (f LocatorFunction) Call(i *lox.Interpreter, arguments []interface{}) (v interface{}, err error) {
-	page, err := f.instance.Get(lox.Token{Lexeme: locatorKey})
+	locator, err := f.instance.Get(lox.Token{Lexeme: locatorKey})
 	if err != nil {
 		return
 	}
 
-	_, isLocator := page.(playwright.Locator)
+	_, isLocator := locator.(playwright.Locator)
 	if !isLocator {
 		return nil, fmt.Errorf("is not Locator")
 	}
 
-	v, err = f.call(page.(playwright.Locator), arguments)
+	page, err := f.instance.Get(lox.Token{Lexeme: "page"})
+	if err != nil {
+		return
+	}
+
+	_, isPage := page.(playwright.Page)
+	if !isPage {
+		return nil, fmt.Errorf("is not Page")
+	}
+
+	v, err = f.call(locator.(playwright.Locator), page.(playwright.Page), arguments)
 
 	return v, err
 }
@@ -56,27 +66,39 @@ func (f LocatorFunction) Bind(instance *lox.LoxInstance) lox.Callable {
 	return f
 }
 
-func NewLocatorInstance(_locator playwright.Locator) (*lox.LoxInstance, error) {
+func NewLocatorInstance(_locator playwright.Locator, _page playwright.Page) (*lox.LoxInstance, error) {
 	instance := lox.NewLoxInstance(lox.NewLoxClass("Locator", nil, map[string]lox.Callable{
 		"locator": newLocatorFunction("locator", 1, locator),
-		"text": newLocatorFunction("text", 0, func(page playwright.Locator, _ []interface{}) (v interface{}, err error) {
-			return page.TextContent()
+		"text": newLocatorFunction("text", 0, func(locator playwright.Locator, page playwright.Page, _ []interface{}) (v interface{}, err error) {
+			return locator.TextContent()
 		}),
-		"first": newLocatorFunction("first", 0, func(page playwright.Locator, _ []interface{}) (v interface{}, err error) {
-			return NewLocatorInstance(page.First())
+		"click": newLocatorFunction("click", 0, func(locator playwright.Locator, page playwright.Page, _ []interface{}) (v interface{}, err error) {
+			_ = locator.ScrollIntoViewIfNeeded()
+			mouse := page.Mouse()
+
+			box, err := locator.BoundingBox()
+			if err != nil {
+				return nil, err
+			}
+
+			_ = mouse.Move(box.X+box.Width/2, box.Y+box.Height/2)
+			return nil, mouse.Click(box.X+box.Width/2, box.Y+box.Height/2)
 		}),
-		"last": newLocatorFunction("last", 0, func(page playwright.Locator, _ []interface{}) (v interface{}, err error) {
-			return NewLocatorInstance(page.Last())
+		"first": newLocatorFunction("first", 0, func(locator playwright.Locator, page playwright.Page, _ []interface{}) (v interface{}, err error) {
+			return NewLocatorInstance(locator.First(), page)
 		}),
-		"all": newLocatorFunction("all", 0, func(page playwright.Locator, _ []interface{}) (v interface{}, err error) {
-			all, err := page.All()
+		"last": newLocatorFunction("last", 0, func(locator playwright.Locator, page playwright.Page, _ []interface{}) (v interface{}, err error) {
+			return NewLocatorInstance(locator.Last(), page)
+		}),
+		"all": newLocatorFunction("all", 0, func(locator playwright.Locator, page playwright.Page, _ []interface{}) (v interface{}, err error) {
+			all, err := locator.All()
 			if err != nil {
 				return nil, err
 			}
 
 			instances := make([]*lox.LoxInstance, len(all))
 			for i, locator := range all {
-				instances[i], err = NewLocatorInstance(locator)
+				instances[i], err = NewLocatorInstance(locator, page)
 				if err != nil {
 					return nil, err
 				}
@@ -87,15 +109,16 @@ func NewLocatorInstance(_locator playwright.Locator) (*lox.LoxInstance, error) {
 	}))
 
 	_ = instance.Set(lox.Token{Lexeme: locatorKey}, lox.NewLiteralExpr(_locator))
+	_ = instance.Set(lox.Token{Lexeme: "page"}, lox.NewLiteralExpr(_page))
 
 	return instance, nil
 }
 
-func locator(locator playwright.Locator, arguments []any) (v interface{}, err error) {
+func locator(locator playwright.Locator, page playwright.Page, arguments []any) (v interface{}, err error) {
 	selector, ok := arguments[0].(string)
 	if !ok {
 		err = fmt.Errorf("get() 1st argument need string, but got %v", arguments[0])
 		return
 	}
-	return NewLocatorInstance(locator.Locator(selector))
+	return NewLocatorInstance(locator.Locator(selector), page)
 }

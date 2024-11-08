@@ -1,9 +1,11 @@
 package bus_tracker
 
 import (
+	"context"
 	"fmt"
 	lox "github.com/ariyn/lox_interpreter"
 	"github.com/playwright-community/playwright-go"
+	"time"
 )
 
 func NewPageInstance(page playwright.Page) (*lox.LoxInstance, error) {
@@ -16,7 +18,7 @@ func NewPageInstance(page playwright.Page) (*lox.LoxInstance, error) {
 					return
 				}
 
-				return NewLocatorInstance(page.Locator(selector))
+				return NewLocatorInstance(page.Locator(selector), page)
 			}),
 			"screenshot": newFunction("image", 0, func(page playwright.Page, arguments []any) (v interface{}, err error) {
 				image, err := page.Screenshot(playwright.PageScreenshotOptions{
@@ -33,6 +35,34 @@ func NewPageInstance(page playwright.Page) (*lox.LoxInstance, error) {
 					Name:        "screenshot.png",
 					ContentType: "image/png",
 				}), nil
+			}),
+			"frameLocator": newFunction("frameLocator", 1, func(page playwright.Page, arguments []any) (v interface{}, err error) {
+				selector, ok := arguments[0].(string)
+				if !ok {
+					err = fmt.Errorf("get() 1st argument need string, but got %v", arguments[0])
+					return
+				}
+
+				return NewLocatorInstance(page.FrameLocator(selector).Owner(), page)
+			}),
+			"_sleep": newFunction("_sleep", 1, func(page playwright.Page, arguments []any) (v interface{}, err error) {
+				seconds, ok := arguments[0].(float64)
+				if !ok {
+					err = fmt.Errorf("_sleep() 1st argument need number, but got %v", arguments[0])
+					return
+				}
+
+				waitCtx, cancel := context.WithCancel(context.Background())
+				defer cancel()
+
+				move := moveMouseRandom(waitCtx, page)
+				go move()
+
+				<-time.After(time.Duration(seconds) * time.Second)
+
+				cancel()
+
+				return nil, nil
 			}),
 		}))
 
