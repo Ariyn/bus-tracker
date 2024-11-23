@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	lox "github.com/ariyn/lox_interpreter"
+	"github.com/joho/godotenv"
 	"github.com/playwright-community/playwright-go"
 	"io"
 	"log"
@@ -17,18 +18,28 @@ import (
 var initScript = ""
 
 func init() {
-	f, err := os.Open(os.Getenv("PLAYWRIGHT_BROWSER_INIT_SCRIPT_PATH"))
+	err := godotenv.Load()
 	if err != nil {
-		log.Fatal(err)
-	}
-	defer f.Close()
-
-	b, err := io.ReadAll(f)
-	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error loading .env file", err)
 	}
 
-	initScript = string(b)
+	path := os.Getenv("PLAYWRIGHT_BROWSER_INIT_SCRIPT_PATH")
+	if path == "" {
+		log.Println("no init script")
+	} else {
+		f, err := os.Open(path)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer f.Close()
+
+		b, err := io.ReadAll(f)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		initScript = string(b)
+	}
 }
 
 var _ lox.Callable = (*BrowserGetFunction)(nil)
@@ -65,8 +76,7 @@ func (f BrowserGetFunction) Call(i *lox.Interpreter, arguments []interface{}) (v
 	}
 
 	_browser, err := pw.Firefox.Launch(playwright.BrowserTypeLaunchOptions{
-		Headless: playwright.Bool(false),
-		Args:     []string{"--incognito"},
+		Args: []string{"--incognito"},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("could not launch browser: %v", err)
@@ -95,13 +105,10 @@ func (f BrowserGetFunction) Call(i *lox.Interpreter, arguments []interface{}) (v
 	}
 
 	_ = _page.SetViewportSize(1920, 1080)
-	evaluatedResult, err := _page.Evaluate(``)
-
+	err = _page.AddInitScript(playwright.Script{Content: playwright.String(initScript)})
 	if err != nil {
 		return
 	}
-
-	log.Println("evaluated", evaluatedResult)
 
 	//waitCtx, cancel := context.WithCancel(context.Background())
 	//defer cancel()
