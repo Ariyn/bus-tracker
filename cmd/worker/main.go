@@ -153,35 +153,23 @@ func runScript(id string, code string, envVar map[string]string) {
 
 	bts, err := bus_tracker.NewBusTrackerScript(code, envVar)
 	if err != nil {
+		log.Println("error raised", err)
 		writeResult(id, "", err)
 		return
 	}
 
 	v, err := bts.Run()
 	if err != nil {
+		log.Println("error returned", err)
 		writeResult(id, "", err)
 		return
 	}
 
+	log.Printf("returned %#v", v)
+
+	v, err = saveAndReplaceImages(v)
 	if err != nil {
-		log.Println("error returned", err)
-	} else {
-		log.Printf("returned %#v", v)
-	}
-
-	if image, ok := v.(*bus_tracker.Image); ok {
-		path := fmt.Sprintf("%s", image.Name)
-
-		_, err = bus_tracker.StorageClient.UploadFile("images", path, bytes.NewReader(image.Body), storage_go.FileOptions{
-			ContentType: &image.ContentType,
-		})
-		if err != nil {
-			writeResult(id, "", err)
-		}
-
-		publicUrl := bus_tracker.StorageClient.GetPublicUrl("images", path)
-
-		writeResult(id, publicUrl.SignedURL, nil)
+		writeResult(id, "", err)
 		return
 	}
 
@@ -198,6 +186,70 @@ func runScript(id string, code string, envVar map[string]string) {
 
 	writeResult(id, string(b), nil)
 	return
+}
+
+type btImage struct {
+	BtImage struct {
+		Type string `json:"type"`
+		Url  string `json:"url"`
+	} `json:"_bt_data"`
+	OriginalUrl string `json:"original_url"`
+}
+
+func saveAndReplaceImages(v interface{}) (replacedV interface{}, err error) {
+	if image, ok := v.(*bus_tracker.Image); ok {
+		path := uuid.New().String()
+
+		_, err := bus_tracker.StorageClient.UploadFile("images", path, bytes.NewReader(image.Body), storage_go.FileOptions{
+			ContentType: &image.ContentType,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		publicUrl := bus_tracker.StorageClient.GetPublicUrl("images", path)
+		return btImage{
+			BtImage: struct {
+				Type string `json:"type"`
+				Url  string `json:"url"`
+			}{
+				Type: "image",
+				Url:  publicUrl.SignedURL,
+			},
+			OriginalUrl: image.Url,
+		}, nil
+
+	}
+
+	if arr, ok := v.([]interface{}); ok {
+		var replacedArr []interface{}
+		for _, item := range arr {
+			replacedItem, err := saveAndReplaceImages(item)
+			if err != nil {
+				return nil, err
+			}
+
+			replacedArr = append(replacedArr, replacedItem)
+		}
+
+		return replacedArr, nil
+	}
+
+	if m, ok := v.(map[string]interface{}); ok {
+		replacedM := make(map[string]interface{})
+		for k, item := range m {
+			replacedItem, err := saveAndReplaceImages(item)
+			if err != nil {
+				return nil, err
+			}
+
+			replacedM[k] = replacedItem
+		}
+
+		return replacedM, nil
+	}
+
+	return v, nil
 }
 
 func writeResult(id string, result string, err error) {

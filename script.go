@@ -56,18 +56,19 @@ func NewBusTrackerScript(script string, envVar map[string]string) (bt *BusTracke
 
 func (bt *BusTrackerScript) Run() (v interface{}, err error) {
 	v, err = bt.interpreter.Interpret(bt.statements)
-	if err != nil {
-		return
-	}
 
-	browsers, err := bt.interpreter.Env.Get(lox.Token{Lexeme: "_browsers"})
-	if err == nil && browsers != nil {
+	browsers, err2 := bt.interpreter.Env.Get(lox.Token{Lexeme: "_browsers"})
+	if err2 == nil && browsers != nil {
 		for _, browser := range browsers.([]playwright.Browser) {
-			err = browser.Close()
-			if err != nil {
+			err2 = browser.Close()
+			if err2 != nil {
 				return
 			}
 		}
+	}
+
+	if err != nil {
+		return
 	}
 
 	if instance, ok := v.(*lox.LoxInstance); ok {
