@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"github.com/robfig/cron/v3"
 	storage_go "github.com/supabase-community/storage-go"
 	"log"
 	"os"
@@ -46,12 +47,28 @@ func main() {
 
 	queue := make(chan *function, 100)
 
+	cronTicker := time.NewTicker(1 * time.Minute)
+	defer cronTicker.Stop()
+
+	go func() {
+		wg.Add(1)
+		defer wg.Done()
+
+		for range cronTicker.C {
+			err := getCronjob()
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	}()
+
+	taskTicker := time.NewTicker(1 * time.Second)
+	defer taskTicker.Stop()
+
 	go func(queue chan<- *function) {
 		wg.Add(1)
 		defer wg.Done()
-		for {
-			time.Sleep(1 * time.Second)
-
+		for range taskTicker.C {
 			f, err := getTask()
 			if err == sql.ErrNoRows {
 				continue
@@ -67,6 +84,7 @@ func main() {
 		}
 	}(queue)
 
+	// TODO: This does not run parallel. It should be run in parallel.
 	for f := range queue {
 		runScript(f.taskID, f.code, f.envVar)
 	}
@@ -139,6 +157,62 @@ func getCode(functionId string) (code string, err error) {
 	}
 
 	err = row.Scan(&code)
+	return
+}
+
+type Cronjob struct {
+	Expression string
+	Minutes    []int
+	Hours      []int
+	DayOfMonth []int
+	DaysOfWeek []int
+	Month      []int
+}
+
+func getCronjob() (err error) {
+	rows, err := db.Query("SELECT id, function_id, crontab FROM crontabs WHERE next_run_at < NOW()")
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	defer rows.Close()
+	for rows.Next() {
+		var id, functionId, crontabString string
+		err = rows.Scan(&id, &functionId, &crontabString)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		_, err = db.Exec("INSERT INTO tasks (function_id, status, user_id, cron_id) VALUES ($1, 'pending', (SELECT user_id FROM crontabs WHERE id = $2), $2)", functionId, id)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		var cronjob Cronjob
+		err = json.Unmarshal([]byte(crontabString), &cronjob)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		parser := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
+		result, err := parser.Parse(cronjob.Expression)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		next := result.Next(time.Now())
+		_, err = db.Exec("UPDATE crontabs SET next_run_at = $1 WHERE id = $2", next, id)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+	}
+
 	return
 }
 
